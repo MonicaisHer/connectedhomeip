@@ -506,7 +506,7 @@ config("rtti_default") {
 }
 
 config("no_exceptions") {
-  cflags = [ "-fno-exceptions" ]
+  cflags = [ "-fexceptions" ] # An ugly way to enable exceptions handling 
 }
 
 config("exceptions") {

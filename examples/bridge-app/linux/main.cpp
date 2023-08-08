@@ -58,6 +58,8 @@
 #include "main.h"
 #include <app/server/Server.h>
 
+#include <mqtt/async_client.h>
+
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -1088,6 +1090,29 @@ int main(int argc, char * argv[])
 
     ApplicationInit();
     chip::DeviceLayer::PlatformMgr().RunEventLoop();
+
+    // MQTT
+    const std::string brokerAddress = "tcp://localhost:1883";
+    const std::string clientId = "my_client_id";
+    const std::string topic = "test_topic";
+    const std::string payload = "Hello, MQTT!";
+
+    mqtt::async_client client(brokerAddress, clientId);
+
+    mqtt::connect_options connOpts;
+    mqtt::token_ptr connectionToken = client.connect(connOpts);
+    connectionToken->wait_for(std::chrono::seconds(1));
+
+    if (!connectionToken->is_complete()) {
+        // Handle connection error
+        return -1;
+    }
+
+    mqtt::message_ptr msg = mqtt::make_message(topic, payload);
+    client.publish(msg);  // Asynchronous publish
+
+    // Disconnect from the broker
+    client.disconnect()->wait_for(std::chrono::seconds(1));
 
     return 0;
 }
