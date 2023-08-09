@@ -1088,9 +1088,7 @@ int main(int argc, char * argv[])
         }
     }
 
-
-
-    // RUN MQTT
+	// RUN MQTT
 	const string SERVER_ADDRESS = "tcp://localhost:1883";
 	const string CLIENT_ID = "paho_cpp_async_publish";
 	const string TOPIC = "test-topic";

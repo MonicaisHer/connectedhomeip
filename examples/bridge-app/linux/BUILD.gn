@@ -34,12 +34,10 @@ executable("chip-bridge-app") {
     "${chip_root}/src/lib",
   ]
 
-  cflags = [ 
-    "-Wconversion",
-  ]
+  cflags = [ "-Wconversion" ]
 
   ldflags = [
-    "-L/usr/local/lib",  # Library search path for the C linker
+    "-L/usr/local/lib",  # Library search path for the Paho MQTT C and C++ linkers
   ]
 
   libs = [ 
