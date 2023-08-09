@@ -58,6 +58,7 @@
 #include "main.h"
 #include <app/server/Server.h>
 
+#include <iostream>
 #include <mqtt/async_client.h>
 
 #include <cassert>
@@ -71,6 +72,7 @@ using namespace chip::Inet;
 using namespace chip::Transport;
 using namespace chip::DeviceLayer;
 using namespace chip::app::Clusters;
+using namespace std;
 
 namespace {
 
@@ -1086,33 +1088,37 @@ int main(int argc, char * argv[])
         }
     }
 
-    // Run CHIP
 
-    ApplicationInit();
-    chip::DeviceLayer::PlatformMgr().RunEventLoop();
 
-    // MQTT
-    const std::string brokerAddress = "tcp://localhost:1883";
-    const std::string clientId = "my_client_id";
-    const std::string topic = "test_topic";
-    const std::string payload = "Hello, MQTT!";
+    // RUN MQTT
+	const string SERVER_ADDRESS = "tcp://localhost:1883";
+	const string CLIENT_ID = "paho_cpp_async_publish";
+	const string TOPIC = "test-topic";
+	const char* PAYLOAD = "Test simple raw data";
 
-    mqtt::async_client client(brokerAddress, clientId);
+    cout << "Initializing..." << endl;
+    mqtt::async_client client(SERVER_ADDRESS, CLIENT_ID);
 
-    mqtt::connect_options connOpts;
-    mqtt::token_ptr connectionToken = client.connect(connOpts);
-    connectionToken->wait_for(std::chrono::seconds(1));
+    try {
+        cout << "Connecting..." << endl;
+        client.connect()->wait();
+        cout << "Connected." << endl;
 
-    if (!connectionToken->is_complete()) {
-        // Handle connection error
-        return -1;
+        cout << "Publishing message..." << endl;
+        client.publish(mqtt::make_message(TOPIC, PAYLOAD))->wait();
+        cout << "Message published." << endl;
+
+        cout << "Disconnecting..." << endl;
+        client.disconnect()->wait();
+        cout << "Disconnected." << endl;
+    }
+    catch (const mqtt::exception& exc) {
+        cerr << "Error: " << exc.what() << endl;
+        return 1;
     }
 
-    mqtt::message_ptr msg = mqtt::make_message(topic, payload);
-    client.publish(msg);  // Asynchronous publish
-
-    // Disconnect from the broker
-    client.disconnect()->wait_for(std::chrono::seconds(1));
-
+    // Run CHIP
+    ApplicationInit();
+	chip::DeviceLayer::PlatformMgr().RunEventLoop();
     return 0;
 }
