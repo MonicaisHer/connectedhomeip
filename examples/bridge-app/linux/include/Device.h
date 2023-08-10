@@ -26,6 +26,8 @@
 #include <functional>
 #include <vector>
 
+#include <mqtt/async_client.h>
+
 class Device
 {
 public:
@@ -79,6 +81,7 @@ public:
 
     bool IsOn();
     void SetOnOff(bool aOn);
+    void MQTTPublisher(mqtt::async_client& client, const std::string& topic, const std::string& payload);
     void Toggle();
 
     using DeviceCallback_fn = std::function<void(DeviceOnOff *, DeviceOnOff::Changed_t)>;

@@ -58,7 +58,6 @@
 #include "main.h"
 #include <app/server/Server.h>
 
-#include <iostream>
 #include <mqtt/async_client.h>
 
 #include <cassert>
@@ -119,6 +118,10 @@ Clusters::NetworkCommissioning::Instance sEthernetNetworkCommissioningInstance(0
 const int16_t minMeasuredValue     = -27315;
 const int16_t maxMeasuredValue     = 32766;
 const int16_t initialMeasuredValue = 100;
+
+const string SERVER_ADDRESS = "tcp://localhost:1883";
+const string CLIENT_ID = "paho_cpp_async_publish";
+std::unique_ptr<mqtt::async_client> clientPtr;
 
 // ENDPOINT DEFINITIONS:
 // =================================================================================
@@ -547,13 +550,21 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
 
     if ((attributeId == OnOff::Attributes::OnOff::Id) && (dev->IsReachable()))
     {
+        const string topic = "OnOff";
+
         if (*buffer)
         {
+            const string payload = "ON";
+
             dev->SetOnOff(true);
+            dev->MQTTPublisher(*clientPtr, topic, payload);
         }
         else
         {
+            const char* payload = "OFF";
+
             dev->SetOnOff(false);
+            dev->MQTTPublisher(*clientPtr, topic, payload);
         }
     }
     else
@@ -814,6 +825,10 @@ void ApplicationInit()
     {
         sEthernetNetworkCommissioningInstance.Init();
     }
+
+    // MOTT Init
+    ChipLogProgress(DeviceLayer, "[MQTT] Initializing...");
+    clientPtr = std::make_unique<mqtt::async_client>(SERVER_ADDRESS, CLIENT_ID);
 }
 
 const EmberAfDeviceType gBridgedOnOffDeviceTypes[] = { { DEVICE_TYPE_LO_ON_OFF_LIGHT, DEVICE_VERSION_DEFAULT },
@@ -1088,32 +1103,7 @@ int main(int argc, char * argv[])
         }
     }
 
-	// RUN MQTT
-	const string SERVER_ADDRESS = "tcp://localhost:1883";
-	const string CLIENT_ID = "paho_cpp_async_publish";
-	const string TOPIC = "test-topic";
-	const char* PAYLOAD = "Test simple raw data";
 
-    cout << "Initializing..." << endl;
-    mqtt::async_client client(SERVER_ADDRESS, CLIENT_ID);
-
-    try {
-        cout << "Connecting..." << endl;
-        client.connect()->wait();
-        cout << "Connected." << endl;
-
-        cout << "Publishing message..." << endl;
-        client.publish(mqtt::make_message(TOPIC, PAYLOAD))->wait();
-        cout << "Message published." << endl;
-
-        cout << "Disconnecting..." << endl;
-        client.disconnect()->wait();
-        cout << "Disconnected." << endl;
-    }
-    catch (const mqtt::exception& exc) {
-        cerr << "Error: " << exc.what() << endl;
-        return 1;
-    }
 
     // Run CHIP
     ApplicationInit();

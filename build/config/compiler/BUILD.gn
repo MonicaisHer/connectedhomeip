@@ -506,7 +506,7 @@ config("rtti_default") {
 }
 
 config("no_exceptions") {
-  cflags = [ "-fexceptions" ] # An ugly way to enable exceptions handling 
+  cflags = [ "-fno-exceptions" ]
 }
 
 config("exceptions") {
@@ -514,7 +514,8 @@ config("exceptions") {
 }
 
 config("exceptions_default") {
-  configs = [ ":no_exceptions" ]
+  configs = [ ":exceptions" ] # Enable exceptions handling 
+  # configs = [ ":no_exceptions" ]
 }
 
 config("unwind_tables") {

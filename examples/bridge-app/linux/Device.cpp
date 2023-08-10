@@ -110,6 +110,25 @@ void DeviceOnOff::SetOnOff(bool aOn)
     }
 }
 
+void DeviceOnOff::MQTTPublisher(mqtt::async_client& client, const std::string& topic, const std::string& payload) {
+    try {
+        ChipLogProgress(DeviceLayer, "[MQTT] Connecting...");
+        client.connect()->wait();
+        ChipLogProgress(DeviceLayer, "[MQTT] Connected.");
+
+        ChipLogProgress(DeviceLayer, "[MQTT] Publishing message...");
+        client.publish(mqtt::make_message(topic, payload))->wait();
+        ChipLogProgress(DeviceLayer, "[MQTT] Message published.");
+
+        ChipLogProgress(DeviceLayer, "[MQTT] Disconnecting...");
+
+        client.disconnect()->wait();
+        ChipLogProgress(DeviceLayer, "[MQTT] Disconnected.");
+    } catch (const mqtt::exception& exc) {
+        ChipLogProgress(DeviceLayer, "[MQTT] Error: %s", exc.what() );
+    }
+}
+
 void DeviceOnOff::Toggle()
 {
     bool aOn = !IsOn();
