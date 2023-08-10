@@ -119,10 +119,6 @@ const int16_t minMeasuredValue     = -27315;
 const int16_t maxMeasuredValue     = 32766;
 const int16_t initialMeasuredValue = 100;
 
-const string SERVER_ADDRESS = "tcp://localhost:1883";
-const string CLIENT_ID = "paho_cpp_async_publish";
-std::unique_ptr<mqtt::async_client> clientPtr;
-
 // ENDPOINT DEFINITIONS:
 // =================================================================================
 //
@@ -304,6 +300,12 @@ DataVersion gComposedPowerSourceDataVersions[ArraySize(bridgedPowerSourceCluster
 #define ZCL_TEMPERATURE_SENSOR_CLUSTER_REVISION (1u)
 #define ZCL_TEMPERATURE_SENSOR_FEATURE_MAP (0u)
 #define ZCL_POWER_SOURCE_CLUSTER_REVISION (1u)
+
+// MQTT DEFINITIONS:
+// =================================================================================
+#define SERVER_ADDRESS "SERVER_ADDRESS"
+const string clientId = "paho_cpp_async_publish";
+std::unique_ptr<mqtt::async_client> clientPtr;
 
 // ---------------------------------------------------------------------------
 
@@ -827,8 +829,18 @@ void ApplicationInit()
     }
 
     // MOTT Init
-    ChipLogProgress(DeviceLayer, "[MQTT] Initializing...");
-    clientPtr = std::make_unique<mqtt::async_client>(SERVER_ADDRESS, CLIENT_ID);
+    char *envSERVER_ADDRESS = std::getenv(SERVER_ADDRESS);
+    if (envSERVER_ADDRESS == NULL || strlen(envSERVER_ADDRESS) == 0)
+    {
+        ChipLogProgress(DeviceLayer, "[MQTT] Environment variable not set or empty: %s", SERVER_ADDRESS);
+        ChipLogProgress(DeviceLayer, "[MQTT] Initialization failed due to missing or empty SERVER_ADDRESS");
+    } else {
+        char *serverAddress = envSERVER_ADDRESS;
+
+        ChipLogProgress(DeviceLayer, "Using SERVER_ADDRESS: %s", serverAddress);
+        ChipLogProgress(DeviceLayer, "[MQTT] Initializing...");
+        clientPtr = std::make_unique<mqtt::async_client>(serverAddress, clientId);
+    }
 }
 
 const EmberAfDeviceType gBridgedOnOffDeviceTypes[] = { { DEVICE_TYPE_LO_ON_OFF_LIGHT, DEVICE_VERSION_DEFAULT },
