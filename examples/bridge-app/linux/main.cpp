@@ -556,17 +556,13 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
 
         if (*buffer)
         {
-            const string payload = "ON";
-
             dev->SetOnOff(true);
-            dev->MQTTPublisher(*clientPtr, topic, payload);
+            dev->MQTTPublish(*clientPtr, topic, "ON");
         }
         else
         {
-            const char* payload = "OFF";
-
             dev->SetOnOff(false);
-            dev->MQTTPublisher(*clientPtr, topic, payload);
+            dev->MQTTPublish(*clientPtr, topic, "OFF");
         }
     }
     else
@@ -830,7 +826,7 @@ void ApplicationInit()
 
     // MOTT Init
     char *envSERVER_ADDRESS = std::getenv(SERVER_ADDRESS);
-    if (envSERVER_ADDRESS == NULL || strlen(envSERVER_ADDRESS) == 0)
+    if (envSERVER_ADDRESS == nullptr || strlen(envSERVER_ADDRESS) == 0)
     {
         ChipLogProgress(DeviceLayer, "[MQTT] Environment variable not set or empty: %s", SERVER_ADDRESS);
         ChipLogProgress(DeviceLayer, "[MQTT] Initialization failed due to missing or empty SERVER_ADDRESS");
@@ -840,6 +836,10 @@ void ApplicationInit()
         ChipLogProgress(DeviceLayer, "Using SERVER_ADDRESS: %s", serverAddress);
         ChipLogProgress(DeviceLayer, "[MQTT] Initializing...");
         clientPtr = std::make_unique<mqtt::async_client>(serverAddress, clientId);
+        
+        ChipLogProgress(DeviceLayer, "[MQTT] Connecting...");
+        clientPtr->connect()->wait();
+        ChipLogProgress(DeviceLayer, "[MQTT] Connected.");
     }
 }
 

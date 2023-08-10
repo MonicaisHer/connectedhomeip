@@ -56,6 +56,7 @@ public:
     inline std::string GetLocation() { return mLocation; };
     inline std::string GetZone() { return mZone; };
     inline void SetZone(std::string zone) { mZone = zone; };
+    void MQTTPublish(mqtt::async_client& client, const std::string& topic, const std::string& payload);
 
 private:
     virtual void HandleDeviceChange(Device * device, Device::Changed_t changeMask) = 0;
@@ -81,7 +82,6 @@ public:
 
     bool IsOn();
     void SetOnOff(bool aOn);
-    void MQTTPublisher(mqtt::async_client& client, const std::string& topic, const std::string& payload);
     void Toggle();
 
     using DeviceCallback_fn = std::function<void(DeviceOnOff *, DeviceOnOff::Changed_t)>;
