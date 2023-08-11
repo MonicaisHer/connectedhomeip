@@ -91,11 +91,6 @@ void Device::MQTTPublish(mqtt::async_client& client, const std::string& topic, c
         ChipLogProgress(DeviceLayer, "[MQTT] Publishing message...");
         client.publish(mqtt::make_message(topic, payload))->wait();
         ChipLogProgress(DeviceLayer, "[MQTT] Message published.");
-
-        ChipLogProgress(DeviceLayer, "[MQTT] Disconnecting...");
-
-        client.disconnect()->wait();
-        ChipLogProgress(DeviceLayer, "[MQTT] Disconnected.");
     } catch (const mqtt::exception& exc) {
         ChipLogProgress(DeviceLayer, "[MQTT] Error: %s", exc.what() );
     }

@@ -557,12 +557,13 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
         if (*buffer)
         {
             dev->SetOnOff(true);
-            dev->MQTTPublish(*clientPtr, topic, "ON");
+            dev->MQTTPublish(*clientPtr, std::string(dev->GetName()) + "/" + topic, "ON");
         }
         else
         {
             dev->SetOnOff(false);
-            dev->MQTTPublish(*clientPtr, topic, "OFF");
+            dev->MQTTPublish(*clientPtr, std::string(dev->GetName()) + "/" + topic, "OFF");
+
         }
     }
     else
@@ -830,6 +831,7 @@ void ApplicationInit()
     {
         ChipLogProgress(DeviceLayer, "[MQTT] Environment variable not set or empty: %s", SERVER_ADDRESS);
         ChipLogProgress(DeviceLayer, "[MQTT] Initialization failed due to missing or empty SERVER_ADDRESS");
+        return;
     } else {
         char *serverAddress = envSERVER_ADDRESS;
 
@@ -992,6 +994,16 @@ void * bridge_polling_thread(void * context)
     return nullptr;
 }
 
+bool gRunning = true;
+
+void SignalHandler(int signal) {
+    if (signal == SIGINT) {
+        gRunning = false;
+        std::cerr << "Ctrl+C pressed. Exiting..." << std::endl;
+        chip::DeviceLayer::PlatformMgr().Shutdown(); // Perform any necessary cleanup
+    }
+}
+
 int main(int argc, char * argv[])
 {
     // Clear out the device database
@@ -1115,10 +1127,18 @@ int main(int argc, char * argv[])
         }
     }
 
-
-
     // Run CHIP
     ApplicationInit();
-	chip::DeviceLayer::PlatformMgr().RunEventLoop();
+    chip::DeviceLayer::PlatformMgr().RunEventLoop();
+    
+    // Todo: disconnect MQTT before the application processes a shutdown. 
+    // e.g. Install a signal handler for the Ctrl+C to catch the termination command
+    // and trigger MQTT disconnection and shutdown
+    // 
+    // ChipLogProgress(DeviceLayer, "[MQTT] Disconnecting...");
+    // clientPtr->disconnect()->wait();
+    // ChipLogProgress(DeviceLayer, "[MQTT] Disconnected.");
+    // PlatformMgr().Shutdown();
+
     return 0;
 }
