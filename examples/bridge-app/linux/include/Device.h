@@ -26,6 +26,8 @@
 #include <functional>
 #include <vector>
 
+#include <mqtt/async_client.h>
+
 class Device
 {
 public:
@@ -54,6 +56,7 @@ public:
     inline std::string GetLocation() { return mLocation; };
     inline std::string GetZone() { return mZone; };
     inline void SetZone(std::string zone) { mZone = zone; };
+    void MQTTPublish(mqtt::async_client& client, const std::string& topic, const std::string& payload);
 
 private:
     virtual void HandleDeviceChange(Device * device, Device::Changed_t changeMask) = 0;

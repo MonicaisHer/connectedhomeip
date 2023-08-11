@@ -86,6 +86,16 @@ void Device::SetLocation(std::string szLocation)
     }
 }
 
+void Device::MQTTPublish(mqtt::async_client& client, const std::string& topic, const std::string& payload) {
+    try {
+        ChipLogProgress(DeviceLayer, "[MQTT] Publishing message...");
+        client.publish(mqtt::make_message(topic, payload))->wait();
+        ChipLogProgress(DeviceLayer, "[MQTT] Message published.");
+    } catch (const mqtt::exception& exc) {
+        ChipLogProgress(DeviceLayer, "[MQTT] Error: %s", exc.what() );
+    }
+}
+
 DeviceOnOff::DeviceOnOff(const char * szDeviceName, std::string szLocation) : Device(szDeviceName, szLocation)
 {
     mOn = false;

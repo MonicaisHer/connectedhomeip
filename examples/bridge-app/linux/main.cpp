@@ -58,6 +58,8 @@
 #include "main.h"
 #include <app/server/Server.h>
 
+#include <mqtt/async_client.h>
+
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -69,6 +71,7 @@ using namespace chip::Inet;
 using namespace chip::Transport;
 using namespace chip::DeviceLayer;
 using namespace chip::app::Clusters;
+using namespace std;
 
 namespace {
 
@@ -297,6 +300,12 @@ DataVersion gComposedPowerSourceDataVersions[ArraySize(bridgedPowerSourceCluster
 #define ZCL_TEMPERATURE_SENSOR_CLUSTER_REVISION (1u)
 #define ZCL_TEMPERATURE_SENSOR_FEATURE_MAP (0u)
 #define ZCL_POWER_SOURCE_CLUSTER_REVISION (1u)
+
+// MQTT DEFINITIONS:
+// =================================================================================
+#define SERVER_ADDRESS "SERVER_ADDRESS"
+const string clientId = "paho_cpp_async_publish";
+std::unique_ptr<mqtt::async_client> clientPtr;
 
 // ---------------------------------------------------------------------------
 
@@ -543,13 +552,18 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
 
     if ((attributeId == OnOff::Attributes::OnOff::Id) && (dev->IsReachable()))
     {
+        const string topic = "OnOff";
+
         if (*buffer)
         {
             dev->SetOnOff(true);
+            dev->MQTTPublish(*clientPtr, std::string(dev->GetName()) + "/" + topic, "ON");
         }
         else
         {
             dev->SetOnOff(false);
+            dev->MQTTPublish(*clientPtr, std::string(dev->GetName()) + "/" + topic, "OFF");
+
         }
     }
     else
@@ -810,6 +824,25 @@ void ApplicationInit()
     {
         sEthernetNetworkCommissioningInstance.Init();
     }
+
+    // MOTT Init
+    char *envSERVER_ADDRESS = std::getenv(SERVER_ADDRESS);
+    if (envSERVER_ADDRESS == nullptr || strlen(envSERVER_ADDRESS) == 0)
+    {
+        ChipLogProgress(DeviceLayer, "[MQTT] Environment variable not set or empty: %s", SERVER_ADDRESS);
+        ChipLogProgress(DeviceLayer, "[MQTT] Initialization failed due to missing or empty SERVER_ADDRESS");
+        return;
+    } else {
+        char *serverAddress = envSERVER_ADDRESS;
+
+        ChipLogProgress(DeviceLayer, "Using SERVER_ADDRESS: %s", serverAddress);
+        ChipLogProgress(DeviceLayer, "[MQTT] Initializing...");
+        clientPtr = std::make_unique<mqtt::async_client>(serverAddress, clientId);
+        
+        ChipLogProgress(DeviceLayer, "[MQTT] Connecting...");
+        clientPtr->connect()->wait();
+        ChipLogProgress(DeviceLayer, "[MQTT] Connected.");
+    }
 }
 
 const EmberAfDeviceType gBridgedOnOffDeviceTypes[] = { { DEVICE_TYPE_LO_ON_OFF_LIGHT, DEVICE_VERSION_DEFAULT },
@@ -961,6 +994,16 @@ void * bridge_polling_thread(void * context)
     return nullptr;
 }
 
+bool gRunning = true;
+
+void SignalHandler(int signal) {
+    if (signal == SIGINT) {
+        gRunning = false;
+        std::cerr << "Ctrl+C pressed. Exiting..." << std::endl;
+        chip::DeviceLayer::PlatformMgr().Shutdown(); // Perform any necessary cleanup
+    }
+}
+
 int main(int argc, char * argv[])
 {
     // Clear out the device database
@@ -1085,9 +1128,17 @@ int main(int argc, char * argv[])
     }
 
     // Run CHIP
-
     ApplicationInit();
     chip::DeviceLayer::PlatformMgr().RunEventLoop();
+    
+    // Todo: disconnect MQTT before the application processes a shutdown. 
+    // e.g. Install a signal handler for the Ctrl+C to catch the termination command
+    // and trigger MQTT disconnection and shutdown
+    // 
+    // ChipLogProgress(DeviceLayer, "[MQTT] Disconnecting...");
+    // clientPtr->disconnect()->wait();
+    // ChipLogProgress(DeviceLayer, "[MQTT] Disconnected.");
+    // PlatformMgr().Shutdown();
 
     return 0;
 }

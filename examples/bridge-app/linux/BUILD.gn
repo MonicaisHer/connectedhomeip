@@ -36,6 +36,15 @@ executable("chip-bridge-app") {
 
   cflags = [ "-Wconversion" ]
 
+  ldflags = [
+    "-L/usr/local/lib",  # Library search path for the Paho MQTT C and C++ linkers
+  ]
+
+  libs = [ 
+    "paho-mqttpp3", # Link against Paho MQTT C++ library
+    "paho-mqtt3a", # Link against Paho MQTT C library (asynchronous, no encryption)
+  ]
+
   include_dirs = [ "include" ]
 
   output_dir = root_out_dir
