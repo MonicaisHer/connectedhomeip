@@ -60,6 +60,8 @@
 
 #include <mqtt/async_client.h>
 
+#include <nlohmann/json.hpp>
+
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -72,6 +74,8 @@ using namespace chip::Transport;
 using namespace chip::DeviceLayer;
 using namespace chip::app::Clusters;
 using namespace std;
+
+using json = nlohmann::json;
 
 namespace {
 
@@ -552,19 +556,29 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
 
     if ((attributeId == OnOff::Attributes::OnOff::Id) && (dev->IsReachable()))
     {
-        const string topic = "OnOff";
+        chip::EndpointId endpointId = dev->GetEndpointId();
+        const char * deviceName = dev->GetName();
+        // chip::ClusterId clusterId = OnOff::Id;
+        const char * clusterName = "OnOff";
+        const char * attributeName = "OnOff";
+
+        const std::string topic = std::to_string(endpointId) + "/" + clusterName + "/" + attributeName;
+
+        json payload;
+        payload["deviceName"] = deviceName; 
 
         if (*buffer)
         {
             dev->SetOnOff(true);
-            dev->MQTTPublish(*clientPtr, std::string(dev->GetName()) + "/" + topic, "ON");
+            payload["Command"] = "ON";
         }
         else
         {
             dev->SetOnOff(false);
-            dev->MQTTPublish(*clientPtr, std::string(dev->GetName()) + "/" + topic, "OFF");
-
+            payload["Command"] = "OFF";
         }
+
+        dev->MQTTPublish(*clientPtr, topic, payload.dump());
     }
     else
     {
