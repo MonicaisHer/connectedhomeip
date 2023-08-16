@@ -557,26 +557,30 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
     if ((attributeId == OnOff::Attributes::OnOff::Id) && (dev->IsReachable()))
     {
         chip::EndpointId endpointId = dev->GetEndpointId();
+        chip::EndpointId parentEndpointId = dev->GetParentEndpointId();
         const char * deviceName = dev->GetName();
-        // chip::ClusterId clusterId = OnOff::Id;
+        const string location = dev->GetLocation();
+        const string zone = dev->GetZone();
+
         const char * clusterName = "OnOff";
         const char * attributeName = "OnOff";
+
+        chip::ClusterId clusterId = OnOff::Id;
 
         const std::string topic = std::to_string(endpointId) + "/" + clusterName + "/" + attributeName;
 
         json payload;
-        payload["deviceName"] = deviceName; 
 
-        if (*buffer)
-        {
-            dev->SetOnOff(true);
-            payload["Command"] = "ON";
-        }
-        else
-        {
-            dev->SetOnOff(false);
-            payload["Command"] = "OFF";
-        }
+        payload = {
+            {"command", (*buffer) ? (dev->SetOnOff(true), "on") : (dev->SetOnOff(false), "off")},
+            {"deviceName", deviceName},
+            {"clusterId", clusterId},
+            {"attributeId", attributeId},
+            {"parentEndpointId", parentEndpointId}, 
+            {"endpointId", endpointId}, 
+            {"location", location}, 
+            {"zone", zone}
+        };
 
         dev->MQTTPublish(*clientPtr, topic, payload.dump());
     }
