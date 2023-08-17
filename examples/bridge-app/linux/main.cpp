@@ -569,16 +569,10 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
 
         chip::ClusterId clusterId = OnOff::Id;
 
-        const char *topicPrefix;
-        char *envTOPIC_PREFIX = std::getenv(TOPIC_PREFIX);
-        if (envTOPIC_PREFIX == nullptr || strlen(envTOPIC_PREFIX) == 0)
-        {
-            topicPrefix = "matter-bridge";
-            ChipLogProgress(DeviceLayer, "[MQTT] Using default TOPIC_PREFIX: %s", topicPrefix);
-        } else {
-            topicPrefix = envTOPIC_PREFIX;
-            ChipLogProgress(DeviceLayer, "[MQTT] Using TOPIC_PREFIX from environment variable: %s", topicPrefix);
-        }
+        const char * envTOPIC_PREFIX = std::getenv(TOPIC_PREFIX);
+        const bool isPrefixValid = (envTOPIC_PREFIX != nullptr && strlen(envTOPIC_PREFIX) != 0);
+        const char * topicPrefix = isPrefixValid ? envTOPIC_PREFIX : "matter-bridge";
+        ChipLogProgress(DeviceLayer, "[MQTT] Using TOPIC_PREFIX: %s", topicPrefix);
 
         const std::string topic = std::string(topicPrefix) + "/" + std::to_string(endpointId) + "/" + clusterName + "/" + attributeName;
 
