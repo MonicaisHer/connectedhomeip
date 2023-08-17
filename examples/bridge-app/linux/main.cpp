@@ -308,6 +308,8 @@ DataVersion gComposedPowerSourceDataVersions[ArraySize(bridgedPowerSourceCluster
 // MQTT DEFINITIONS:
 // =================================================================================
 #define SERVER_ADDRESS "SERVER_ADDRESS"
+#define TOPIC_PREFIX "TOPIC_PREFIX"
+
 const string clientId = "paho_cpp_async_publish";
 std::unique_ptr<mqtt::async_client> clientPtr;
 
@@ -567,10 +569,20 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
 
         chip::ClusterId clusterId = OnOff::Id;
 
-        const std::string topic = std::to_string(endpointId) + "/" + clusterName + "/" + attributeName;
+        const char *topicPrefix;
+        char *envTOPIC_PREFIX = std::getenv(TOPIC_PREFIX);
+        if (envTOPIC_PREFIX == nullptr || strlen(envTOPIC_PREFIX) == 0)
+        {
+            topicPrefix = "matter-bridge";
+            ChipLogProgress(DeviceLayer, "[MQTT] Using default TOPIC_PREFIX: %s", topicPrefix);
+        } else {
+            topicPrefix = envTOPIC_PREFIX;
+            ChipLogProgress(DeviceLayer, "[MQTT] Using TOPIC_PREFIX from environment variable: %s", topicPrefix);
+        }
+
+        const std::string topic = std::string(topicPrefix) + "/" + std::to_string(endpointId) + "/" + clusterName + "/" + attributeName;
 
         json payload;
-
         payload = {
             {"command", (*buffer) ? (dev->SetOnOff(true), "on") : (dev->SetOnOff(false), "off")},
             {"deviceName", deviceName},
