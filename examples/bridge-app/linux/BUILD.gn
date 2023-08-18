@@ -32,6 +32,7 @@ executable("chip-bridge-app") {
     "${chip_root}/examples/bridge-app/bridge-common",
     "${chip_root}/examples/platform/linux:app-main",
     "${chip_root}/src/lib",
+    "${chip_root}/third_party/jsoncpp",
   ]
 
   cflags = [ "-Wconversion" ]

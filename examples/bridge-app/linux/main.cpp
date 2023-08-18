@@ -59,8 +59,7 @@
 #include <app/server/Server.h>
 
 #include <mqtt/async_client.h>
-
-#include <nlohmann/json.hpp>
+#include <json/json.h>
 
 #include <cassert>
 #include <iostream>
@@ -74,8 +73,7 @@ using namespace chip::Transport;
 using namespace chip::DeviceLayer;
 using namespace chip::app::Clusters;
 using namespace std;
-
-using json = nlohmann::json;
+using namespace Json;
 
 namespace {
 
@@ -576,19 +574,34 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
 
         const std::string topic = std::string(topicPrefix) + "/" + std::to_string(endpointId) + "/" + clusterName + "/" + attributeName;
 
-        json payload;
-        payload = {
-            {"command", (*buffer) ? (dev->SetOnOff(true), "on") : (dev->SetOnOff(false), "off")},
-            {"deviceName", deviceName},
-            {"clusterId", clusterId},
-            {"attributeId", attributeId},
-            {"parentEndpointId", parentEndpointId}, 
-            {"endpointId", endpointId}, 
-            {"location", location}, 
-            {"zone", zone}
-        };
+        Json::Value payload;
+        
+        const char * command;
+        if (*buffer)
+        {
+            dev->SetOnOff(true);
+            command = "on";
+        }
+        else
+        {
+            dev->SetOnOff(false);
+            command = "off";
 
-        dev->MQTTPublish(*clientPtr, topic, payload.dump());
+        }
+
+        payload["command"] = command;
+        payload["deviceName"] = deviceName;
+        payload["clusterId"] = clusterId;
+        payload["attributeId"] = attributeId;
+        payload["parentEndpointId"] = parentEndpointId;
+        payload["endpointId"] = endpointId;
+        payload["location"] = location;
+        payload["zone"] = zone;
+
+        Json::StreamWriterBuilder writer;
+        std::string payloadString = Json::writeString(writer, payload);
+
+        dev->MQTTPublish(*clientPtr, topic, payloadString);
     }
     else
     {
