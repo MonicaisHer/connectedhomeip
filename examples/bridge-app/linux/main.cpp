@@ -575,7 +575,6 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
         const std::string topic = std::string(topicPrefix) + "/" + std::to_string(endpointId) + "/" + clusterName + "/" + attributeName;
 
         Json::Value payload;
-        
         const char * command;
         if (*buffer)
         {
@@ -586,7 +585,6 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
         {
             dev->SetOnOff(false);
             command = "off";
-
         }
 
         payload["command"] = command;
