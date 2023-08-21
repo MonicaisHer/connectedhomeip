@@ -59,6 +59,7 @@
 #include <app/server/Server.h>
 
 #include <mqtt/async_client.h>
+#include <json/json.h>
 
 #include <cassert>
 #include <iostream>
@@ -72,6 +73,7 @@ using namespace chip::Transport;
 using namespace chip::DeviceLayer;
 using namespace chip::app::Clusters;
 using namespace std;
+using namespace Json;
 
 namespace {
 
@@ -304,6 +306,8 @@ DataVersion gComposedPowerSourceDataVersions[ArraySize(bridgedPowerSourceCluster
 // MQTT DEFINITIONS:
 // =================================================================================
 #define SERVER_ADDRESS "SERVER_ADDRESS"
+#define TOPIC_PREFIX "TOPIC_PREFIX"
+
 const string clientId = "paho_cpp_async_publish";
 std::unique_ptr<mqtt::async_client> clientPtr;
 
@@ -552,19 +556,50 @@ EmberAfStatus HandleWriteOnOffAttribute(DeviceOnOff * dev, chip::AttributeId att
 
     if ((attributeId == OnOff::Attributes::OnOff::Id) && (dev->IsReachable()))
     {
-        const string topic = "OnOff";
+        chip::EndpointId endpointId = dev->GetEndpointId();
+        chip::EndpointId parentEndpointId = dev->GetParentEndpointId();
+        const char * deviceName = dev->GetName();
+        const string location = dev->GetLocation();
+        const string zone = dev->GetZone();
 
+        const char * clusterName = "OnOff";
+        const char * attributeName = "OnOff";
+
+        chip::ClusterId clusterId = OnOff::Id;
+
+        const char * envTOPIC_PREFIX = std::getenv(TOPIC_PREFIX);
+        const bool isPrefixValid = (envTOPIC_PREFIX != nullptr && strlen(envTOPIC_PREFIX) != 0);
+        const char * topicPrefix = isPrefixValid ? envTOPIC_PREFIX : "matter-bridge";
+        ChipLogProgress(DeviceLayer, "[MQTT] Using TOPIC_PREFIX: %s", topicPrefix);
+
+        const std::string topic = std::string(topicPrefix) + "/" + std::to_string(endpointId) + "/" + clusterName + "/" + attributeName;
+
+        Json::Value payload;
+        const char * command;
         if (*buffer)
         {
             dev->SetOnOff(true);
-            dev->MQTTPublish(*clientPtr, std::string(dev->GetName()) + "/" + topic, "ON");
+            command = "on";
         }
         else
         {
             dev->SetOnOff(false);
-            dev->MQTTPublish(*clientPtr, std::string(dev->GetName()) + "/" + topic, "OFF");
-
+            command = "off";
         }
+
+        payload["command"] = command;
+        payload["deviceName"] = deviceName;
+        payload["clusterId"] = clusterId;
+        payload["attributeId"] = attributeId;
+        payload["parentEndpointId"] = parentEndpointId;
+        payload["endpointId"] = endpointId;
+        payload["location"] = location;
+        payload["zone"] = zone;
+
+        Json::StreamWriterBuilder writer;
+        std::string payloadString = Json::writeString(writer, payload);
+
+        dev->MQTTPublish(*clientPtr, topic, payloadString);
     }
     else
     {
